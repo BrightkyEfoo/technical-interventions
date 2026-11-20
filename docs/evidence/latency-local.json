@@ -1,0 +1,21 @@
+{
+  "system": "Darwin",
+  "architecture": "arm64",
+  "logical_cpus": 8,
+  "operation": "GET /requests query filter with zero results",
+  "warmups": 12,
+  "samples_each": 60,
+  "concurrency": 1,
+  "results": {
+    "java": {
+      "p50_ms": 30.06,
+      "p95_ms": 95.45,
+      "max_ms": 975.8
+    },
+    "kotlin": {
+      "p50_ms": 13.73,
+      "p95_ms": 29.97,
+      "max_ms": 99.55
+    }
+  }
+}

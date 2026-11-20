@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>cm.brightky</groupId>
+    <artifactId>serviceops-lab</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <modules>
+        <module>backends/shared/keycloak-accounts</module>
+        <module>backends/java/serviceops-java</module>
+        <module>backends/java/serviceops-notifications-java</module>
+        <module>backends/kotlin/serviceops-kotlin</module>
+        <module>backends/kotlin/serviceops-notifications-kotlin</module>
+    </modules>
+</project>

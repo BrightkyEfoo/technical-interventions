@@ -1,0 +1,43 @@
+{
+  "name": "serviceops-lab",
+  "private": true,
+  "scripts": {
+    "web": "ng serve web --port 4200",
+    "mobile": "ng serve mobile --port 8100",
+    "build": "ng build web && npm run build:mobile",
+    "test": "node --experimental-strip-types --test tests/client/*.test.mjs",
+    "test:e2e": "playwright test",
+    "build:mobile": "ng build mobile && node infra/build-offline.mjs"
+  },
+  "dependencies": {
+    "@angular/animations": "~20.3.0",
+    "@angular/cdk": "~20.2.0",
+    "@angular/common": "~20.3.0",
+    "@angular/compiler": "~20.3.0",
+    "@angular/core": "~20.3.0",
+    "@angular/forms": "~20.3.0",
+    "@angular/platform-browser": "~20.3.0",
+    "@angular/router": "~20.3.0",
+    "@capacitor/android": "~7.4.0",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/browser": "^7.0.5",
+    "@capacitor/camera": "^7.0.0",
+    "@capacitor/core": "~7.4.0",
+    "@capacitor/ios": "~7.4.0",
+    "@capacitor/network": "^7.0.0",
+    "@capacitor/preferences": "^7.0.0",
+    "@ionic/angular": "^8.0.0",
+    "oidc-client-ts": "^3.0.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular/build": "~20.3.0",
+    "@angular/cli": "~20.3.0",
+    "@angular/compiler-cli": "~20.3.0",
+    "@capacitor/cli": "~7.4.0",
+    "@playwright/test": "^1.56.0",
+    "typescript": "~5.9.0"
+  }
+}

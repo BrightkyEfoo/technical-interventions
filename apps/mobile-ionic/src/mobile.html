@@ -1,0 +1,92 @@
+<ion-app>
+  <ion-header>
+    <ion-toolbar><ion-title>ServiceOps · Interventions</ion-title></ion-toolbar>
+  </ion-header>
+  <ion-content>
+    <main class="stack">
+      <div class="toolbar">
+        <span [class.offline]="!online()" class="network">{{ online() ? 'En ligne' : 'Hors ligne' }}</span>
+        @if (session.accountId) {
+          <label>API
+            <select [ngModel]="session.variant()" (ngModelChange)="changeBackend($event)">
+              <option value="java">Java</option><option value="kotlin">Kotlin</option>
+            </select>
+          </label>
+          <ion-button fill="clear" size="small" (click)="logout()">Déconnexion</ion-button>
+        }
+      </div>
+      @if (!session.accountId) {
+        <ion-card><ion-card-content>
+          <h1>{{ cachedIdentity() ? 'Session hors ligne' : 'Mes interventions' }}</h1>
+          @if (cachedIdentity()) { <p>Tu peux consulter la copie locale et modifier un brouillon.</p> }
+          <ion-button (click)="login()" [disabled]="!online()">Se connecter</ion-button>
+          <ion-button fill="outline" (click)="login(true)" [disabled]="!online()">Créer un compte demandeur</ion-button>
+          @if (allowDemo) {
+            @for (user of technicians; track user.id) {
+              <ion-button fill="outline" (click)="demo(user.id)" [disabled]="!online()">{{ user.name }}</ion-button>
+            }
+          }
+          @if (native) {
+            <details><summary>Connexion au serveur de développement</summary>
+              <label>Origine API<input [formControl]="apiHost"></label>
+              <label>Realm OIDC<input [formControl]="authority"></label>
+              <ion-button (click)="saveNativeSettings()">Appliquer</ion-button>
+            </details>
+          }
+        </ion-card-content></ion-card>
+      }
+      @if (session.role === 'SUPER_ADMIN') {
+        <p>La gestion des comptes est accessible depuis l’application web.</p>
+      }
+      @if (notice()) { <p role="status" class="notice">{{ notice() }}</p> }
+      @if (error()) { <p role="alert" class="error">{{ error() }}</p> }
+
+      @if (selected(); as request) {
+        <ion-button fill="clear" (click)="selected.set(null)">Retour à mes interventions</ion-button>
+        <ion-card><ion-card-content>
+          <h1>{{ request.title }}</h1>
+          <p>{{ statusLabel[request.status] }} · Version {{ request.version }}</p>
+          @if (request.report) { <p>{{ request.report }}</p> }
+          @if (request.status === 'ASSIGNED') {
+            <ion-button (click)="start(request)" [disabled]="busy() || !online() || !session.accountId">Démarrer</ion-button>
+          }
+          @if (request.status === 'IN_PROGRESS') {
+            <h2>Photo facultative</h2>
+            @if (native) { <ion-button fill="outline" (click)="takePhoto()">Prendre une photo</ion-button> }
+            @else { <label>Choisir une photo<input type="file" accept="image/jpeg,image/png" (change)="selectFile($event)"></label> }
+            @if (photo()) {
+              <ion-button fill="outline" (click)="upload(request)" [disabled]="busy() || !online() || !session.accountId">Ajouter la photo</ion-button>
+            }
+            @if (!draft()) { <ion-button (click)="beginDraft()">Rédiger un compte rendu</ion-button> }
+          }
+          @if (draft(); as existing) {
+            <label>Compte rendu
+              <textarea [readOnly]="existing.attempted" [formControl]="report" maxlength="2000" rows="6"></textarea>
+            </label>
+            <p class="local">Brouillon conservé sur cet appareil</p>
+            <ion-button (click)="confirmSend()" [disabled]="busy() || !online() || !session.accountId">
+              {{ existing.attempted ? 'Relancer la même commande' : 'Confirmer l’envoi' }}
+            </ion-button>
+          }
+          @if (conflict(); as current) {
+            <section class="error" role="alert">
+              <h2>Intervention modifiée</h2>
+              <p>Version actuelle {{ current.version }} · {{ statusLabel[current.status] }}. Ton texte est conservé.</p>
+              @if (current.report) { <p>Compte rendu enregistré par le serveur · {{ current.report }}</p> }
+              @if (current.status === 'IN_PROGRESS') {
+                <ion-button fill="outline" (click)="useCurrentVersion()">Utiliser la version actuelle</ion-button>
+              }
+            </section>
+          }
+        </ion-card-content></ion-card>
+      } @else if (cachedIdentity() || session.accountId) {
+        <div class="toolbar"><h1>Mes interventions</h1><ion-button fill="clear" (click)="refresh()" [disabled]="!online()">Actualiser</ion-button></div>
+        @for (request of requests(); track request.id) {
+          <ion-card><ion-card-content>
+            <button class="entry" (click)="open(request)"><strong>{{ request.title }}</strong><span>{{ statusLabel[request.status] }}</span></button>
+          </ion-card-content></ion-card>
+        } @empty { <p>Aucune intervention chargée.</p> }
+      }
+    </main>
+  </ion-content>
+</ion-app>

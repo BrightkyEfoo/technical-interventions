@@ -1,0 +1,109 @@
+x-events: &events
+  JAVA_TOOL_OPTIONS: ${SERVICEOPS_JAVA_TOOL_OPTIONS:--XX:ActiveProcessorCount=2 -Xmx320m}
+  SPRING_RABBITMQ_HOST: rabbitmq
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_USER: serviceops
+  RABBITMQ_PASSWORD: ${POSTGRES_PASSWORD}
+  SERVICEOPS_INTERNAL_KEY: ${SERVICEOPS_INTERNAL_KEY:-${POSTGRES_PASSWORD}}
+  SERVER_ADDRESS: 0.0.0.0
+
+x-operations: &operations
+  <<: *events
+  SPRING_PROFILES_ACTIVE: postgres,events
+  SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-serviceops}
+  SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+  SERVICEOPS_ISSUER: http://localhost:${SERVICEOPS_KEYCLOAK_PORT:-8180}/realms/serviceops
+  SERVICEOPS_JWKS: http://keycloak:8080/realms/serviceops/protocol/openid-connect/certs
+  SERVICEOPS_ACCOUNTS_URL: http://keycloak:8080
+  SERVICEOPS_ACCOUNTS_CLIENT_SECRET: ${SERVICEOPS_ACCOUNTS_CLIENT_SECRET:-}
+  SERVICEOPS_ALLOWED_ORIGINS: http://localhost:${SERVICEOPS_WEB_PORT:-4200},http://127.0.0.1:${SERVICEOPS_WEB_PORT:-4200},http://localhost:${SERVICEOPS_MOBILE_WEB_PORT:-8100},http://127.0.0.1:${SERVICEOPS_MOBILE_WEB_PORT:-8100},capacitor://localhost,http://localhost,https://localhost
+  LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+
+x-notifications: &notifications
+  <<: *events
+  SPRING_DATASOURCE_USERNAME: notifications
+  SPRING_DATASOURCE_PASSWORD: ${NOTIFICATIONS_DB_PASSWORD:-${POSTGRES_PASSWORD}}
+  LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+
+x-api-health: &api-health
+  test:
+    - CMD-SHELL
+    - >-
+      bash -ec 'exec 3<>/dev/tcp/127.0.0.1/$$SERVER_PORT;
+      printf "GET /actuator/health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3;
+      grep -q "^HTTP/1.1 200" <&3'
+  interval: 10s
+  timeout: 5s
+  retries: 6
+  start_period: 90s
+
+services:
+  operations-java:
+    image: serviceops-java:${SERVICEOPS_TAG:-local}
+    profiles: ["delivery-java"]
+    environment:
+      <<: *operations
+      SERVER_PORT: "8080"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-serviceops}
+      SERVICEOPS_NOTIFICATIONS_URL: http://notifications-java:8091
+    ports:
+      - "127.0.0.1:${SERVICEOPS_JAVA_PORT:-8080}:8080"
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      keycloak: {condition: service_started}
+      notifications-java: {condition: service_healthy}
+    healthcheck: *api-health
+
+  notifications-java:
+    image: serviceops-notifications-java:${SERVICEOPS_TAG:-local}
+    profiles: ["delivery-java"]
+    environment:
+      <<: *notifications
+      SERVER_PORT: "8091"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://notifications-db:5432/notifications
+    depends_on:
+      notifications-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+    healthcheck: *api-health
+
+  operations-kotlin:
+    image: serviceops-kotlin:${SERVICEOPS_TAG:-local}
+    profiles: ["delivery-kotlin"]
+    environment:
+      <<: *operations
+      SERVER_PORT: "8081"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-serviceops}_kotlin
+      SERVICEOPS_NOTIFICATIONS_URL: http://notifications-kotlin:8092
+    ports:
+      - "127.0.0.1:${SERVICEOPS_KOTLIN_PORT:-8081}:8081"
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      keycloak: {condition: service_started}
+      notifications-kotlin: {condition: service_healthy}
+    healthcheck: *api-health
+
+  notifications-kotlin:
+    image: serviceops-notifications-kotlin:${SERVICEOPS_TAG:-local}
+    profiles: ["delivery-kotlin"]
+    environment:
+      <<: *notifications
+      SERVER_PORT: "8092"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://notifications-db:5432/notifications_kotlin
+    depends_on:
+      notifications-db: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+    healthcheck: *api-health
+
+  web:
+    image: serviceops-web:${SERVICEOPS_TAG:-local}
+    profiles: ["clients"]
+    ports:
+      - "127.0.0.1:${SERVICEOPS_WEB_PORT:-4200}:8080"
+
+  mobile-web:
+    image: serviceops-mobile:${SERVICEOPS_TAG:-local}
+    profiles: ["clients"]
+    ports:
+      - "127.0.0.1:${SERVICEOPS_MOBILE_WEB_PORT:-8100}:8080"

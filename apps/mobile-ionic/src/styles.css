@@ -1,0 +1,22 @@
+@import '@ionic/angular/css/core.css';
+@import '@ionic/angular/css/normalize.css';
+@import '@ionic/angular/css/structure.css';
+@import '@ionic/angular/css/typography.css';
+
+:root { --ion-font-family: 'Avenir Next', system-ui, sans-serif; --ion-color-primary: #185b44; --ion-color-primary-rgb: 24,91,68; --ion-color-primary-contrast: #fff; --ion-color-primary-shade: #15503c; --ion-color-primary-tint: #2f6b57; }
+ion-toolbar { --background: #164132; --color: #fff; }
+ion-content { --background: #edf4ef; }
+.stack { max-width: 610px; padding: 1rem; margin: 0 auto; }
+ion-card { margin: .55rem 0; border-radius: 12px; color: #24433a; }
+h1 { font-size: 1.45rem; margin: 0 0 .45rem; font-weight: 730; }
+h2 { font-size: 1.05rem; margin-top: .8rem; }
+.toolbar { display: flex; align-items: center; gap: .5rem; justify-content: space-between; margin-bottom: .65rem; }
+.network { border-radius: 20px; background: #d9eee1; padding: .28rem .65rem; font-size: .85rem; }
+.network.offline { background: #fce6c2; }
+.entry { display: grid; gap: .32rem; text-align: left; width: 100%; padding: .3rem; color: #1e4435; background: transparent; }
+.entry span, .local { font-size: .86rem; }
+label { display: grid; margin: .65rem 0; }
+input, select, textarea { color: #183c2e; border: 1px solid #b6cdbf; border-radius: 8px; padding: .45rem; background: #fff; }
+textarea { width: 100%; margin-top: .4rem; }
+.error, .notice { border-radius: 8px; padding: .75rem; background: #fce7e0; color: #862b21; }
+.notice { background: #e1f1e6; color: #245a3b; }

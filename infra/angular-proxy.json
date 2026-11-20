@@ -1,0 +1,14 @@
+{
+  "/backend/java/**": {
+    "target": "http://127.0.0.1:8080",
+    "pathRewrite": {
+      "^/backend/java": ""
+    }
+  },
+  "/backend/kotlin/**": {
+    "target": "http://127.0.0.1:8081",
+    "pathRewrite": {
+      "^/backend/kotlin": ""
+    }
+  }
+}

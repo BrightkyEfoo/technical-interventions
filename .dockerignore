@@ -1,0 +1,9 @@
+.env
+.git
+node_modules
+.angular
+test-results
+playwright-report
+apps/mobile-ionic/android/.gradle
+apps/mobile-ionic/android/app/build
+apps/mobile-ionic/ios/App/Pods

@@ -1,0 +1,29 @@
+name: ServiceOps CI
+on: [push, pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '27'
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build and test backends
+        run: ./mvnw --batch-mode package
+      - name: Build and test clients
+        run: |
+          npm ci
+          npm test
+          npm run build
+      - name: Isolated integration suites
+        run: |
+          npx playwright install --with-deps chromium
+          python3 infra/test-local.py

@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-serviceops}
+      POSTGRES_USER: ${POSTGRES_USER:-serviceops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Renseigne POSTGRES_PASSWORD dans .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  keycloak:
+    profiles: ["auth"]
+    image: quay.io/keycloak/keycloak:26.4.7
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_HOSTNAME: http://localhost:${SERVICEOPS_KEYCLOAK_PORT:-8180}
+      SERVICEOPS_WEB_PORT: ${SERVICEOPS_WEB_PORT:-4200}
+      SERVICEOPS_MOBILE_WEB_PORT: ${SERVICEOPS_MOBILE_WEB_PORT:-8100}
+      SERVICEOPS_TEST_GRANTS: ${SERVICEOPS_TEST_GRANTS:-false}
+      SERVICEOPS_ACCOUNTS_CLIENT_SECRET: ${SERVICEOPS_ACCOUNTS_CLIENT_SECRET:-}
+      KEYCLOAK_SUPER_ADMIN_PASSWORD: ${KEYCLOAK_SUPER_ADMIN_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${SERVICEOPS_KEYCLOAK_PORT:-8180}:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./infra/keycloak/serviceops-realm.json:/opt/keycloak/data/import/serviceops-realm.json:ro
+      - ./infra/keycloak/themes/serviceops:/opt/keycloak/themes/serviceops:ro
+
+  rabbitmq:
+    profiles: ["events"]
+    image: rabbitmq:4.1-management
+    environment:
+      RABBITMQ_DEFAULT_USER: serviceops
+      RABBITMQ_DEFAULT_PASS: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:${SERVICEOPS_RABBITMQ_PORT:-5672}:5672"
+      - "127.0.0.1:${SERVICEOPS_RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  notifications-db:
+    profiles: ["events"]
+    image: postgres:15
+    environment:
+      POSTGRES_DB: notifications
+      POSTGRES_USER: notifications
+      POSTGRES_PASSWORD: ${NOTIFICATIONS_DB_PASSWORD:-${POSTGRES_PASSWORD}}
+    ports:
+      - "127.0.0.1:${SERVICEOPS_NOTIFICATIONS_DB_PORT:-5434}:5432"
+    volumes:
+      - notifications_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "notifications", "-d", "notifications"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  keycloak_data:
+  postgres_data:
+  rabbitmq_data:
+  notifications_data:

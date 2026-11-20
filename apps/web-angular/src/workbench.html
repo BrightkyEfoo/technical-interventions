@@ -1,0 +1,235 @@
+<header class="shell topbar">
+  <div class="brand-and-api">
+    <a class="logo" href="/">ServiceOps<span> Lab</span></a>
+    <label class="variant-picker">API
+      <select [ngModel]="session.variant()" (ngModelChange)="changeBackend($event)">
+        <option value="java">Java</option><option value="kotlin">Kotlin</option>
+      </select>
+    </label>
+  </div>
+  @if (account()) {
+    <div class="top-actions">
+      <span class="role">{{ role() }}</span>
+      @if (role() !== 'SUPER_ADMIN') {
+        <button (click)="showNotifications()">Notifications</button>
+      }
+      <button (click)="logout()">Déconnexion</button>
+    </div>
+  }
+</header>
+
+<main class="shell workbench">
+  @if (role() === 'SUPER_ADMIN') {
+    <nav class="segmented admin-nav" aria-label="Administration">
+      <button type="button" [class.active]="adminView() === 'accounts'" [attr.aria-pressed]="adminView() === 'accounts'"
+        [disabled]="busy()" (click)="setAdminView('accounts')">Comptes</button>
+      <button type="button" [class.active]="adminView() === 'requests'" [attr.aria-pressed]="adminView() === 'requests'"
+        [disabled]="busy()" (click)="setAdminView('requests')">Interventions</button>
+    </nav>
+  }
+  @if (!account()) {
+    <section class="login panel">
+      <h1>Suivi des interventions</h1>
+      <p>Connecte-toi pour consulter les demandes de ton équipe.</p>
+      <div class="login-actions">
+        <button class="primary" (click)="login()">Se connecter</button>
+        <button (click)="register()">Créer un compte demandeur</button>
+      </div>
+      @if (allowDemo) {
+        <div class="demo">
+          @for (user of directory; track user.id) {
+            <button (click)="useDemo(user.id)">{{ user.name }}</button>
+          }
+        </div>
+      }
+    </section>
+  } @else if (role() === 'SUPER_ADMIN' && adminView() === 'accounts') {
+    <serviceops-accounts />
+  } @else {
+    <div class="heading">
+      <div>
+        <h1>Demandes d’intervention</h1>
+        <p>{{ result().total }} {{ result().total === 1 ? 'demande accessible' : 'demandes accessibles' }}</p>
+      </div>
+      <div class="segmented">
+        <button [class.active]="!boardView()" [attr.aria-pressed]="!boardView()" (click)="setView(false)">Liste</button>
+        <button [class.active]="boardView()" [attr.aria-pressed]="boardView()" (click)="setView(true)">Kanban</button>
+      </div>
+    </div>
+    @if (role() === 'REQUESTER' || role() === 'MANAGER') {
+      <form class="panel compose" [formGroup]="createForm" (ngSubmit)="create()">
+        <label>Titre de la demande<input formControlName="title" maxlength="120" placeholder="Ex. Porte bloquée au premier étage"></label>
+        <label>Priorité
+          <select formControlName="priority"><option value="LOW">Basse</option><option value="NORMAL">Normale</option><option value="HIGH">Haute</option></select>
+        </label>
+        <button class="primary" type="submit" [disabled]="busy()">Créer</button>
+      </form>
+    }
+    <div class="filters">
+      <label>Recherche<input [ngModel]="search.value" (ngModelChange)="setQuery($event)" placeholder="Rechercher par titre" maxlength="120"></label>
+      @if (!boardView()) {
+        <label>Statut
+          <select [ngModel]="filter.value" (ngModelChange)="setStatus($event)">
+            <option value="">Tous</option>
+            @for (status of statuses; track status) { <option [value]="status">{{ statusLabel[status] }}</option> }
+          </select>
+        </label>
+      }
+    </div>
+    @if (boardView()) {
+      <section class="board" cdkDropListGroup aria-label="Kanban" tabindex="0">
+        @for (status of statuses; track status) {
+          <section cdkDropList [cdkDropListData]="status" (cdkDropListDropped)="drop($event)" class="lane"
+            [attr.data-status]="status" [attr.aria-labelledby]="'lane-' + status">
+            <header class="lane-heading">
+              <h2 [id]="'lane-' + status"><span class="lane-dot" aria-hidden="true"></span>{{ statusLabel[status] }}</h2>
+              <span class="lane-count" [attr.aria-label]="counts()[status] + ' demandes'">{{ counts()[status] }}</span>
+            </header>
+            @for (request of items(status); track request.id) {
+              <article cdkDrag [cdkDragData]="request" [cdkDragDisabled]="busy() || status === 'CLOSED' || role() === 'SUPER_ADMIN'" class="card">
+                <button class="text-action" (click)="detail(request.id)">{{ request.title }}</button>
+                <div class="card-meta">
+                  <span class="card-priority" [attr.data-priority]="request.priority"
+                    [attr.aria-label]="'Priorité ' + priorityLabel[request.priority]">{{ priorityLabel[request.priority] }}</span>
+                  @if (role() === 'MANAGER' && (status === 'OPEN' || status === 'ASSIGNED')) {
+                    <button class="card-action" type="button" (click)="openAssignment(request)">Affecter</button>
+                  }
+                </div>
+              </article>
+            } @empty { <p class="lane-empty">Aucune demande</p> }
+          </section>
+        }
+      </section>
+    } @else {
+      <section class="panel request-list">
+        @for (request of result().items; track request.id) {
+          <article>
+            <button class="text-action" (click)="detail(request.id)">{{ request.title }}</button>
+            <span class="status">{{ statusLabel[request.status] }}</span>
+            <span class="priority" [attr.aria-label]="'Priorité ' + priorityLabel[request.priority]">{{ priorityLabel[request.priority] }}</span>
+          </article>
+        } @empty { <p class="empty">Aucune demande pour ces filtres.</p> }
+      </section>
+      <nav class="pagination" aria-label="Pagination">
+        <button [disabled]="result().page === 0" (click)="pageIndex.next(result().page - 1)">Précédent</button>
+        <span>Page {{ result().page + 1 }}</span>
+        <button [disabled]="(result().page + 1) * result().size >= result().total" (click)="pageIndex.next(result().page + 1)">Suivant</button>
+      </nav>
+    }
+  }
+
+  @if (selected(); as request) {
+    <aside class="panel detail" aria-label="Détail de la demande" (keydown.escape)="selected.set(null)">
+      <header class="panel-heading">
+        <div>
+          <h2>{{ request.title }}</h2>
+          <p>{{ statusLabel[request.status] }} · Version {{ request.version }}</p>
+        </div>
+        <button type="button" class="close-icon" aria-label="Fermer le détail" title="Fermer" (click)="selected.set(null)"></button>
+      </header>
+      <div class="detail-body">
+        <div class="actions detail-actions">
+          @if (role() === 'MANAGER' && (request.status === 'OPEN' || request.status === 'ASSIGNED')) {
+            <button (click)="openAssignment(request)">Affecter</button>
+          }
+          @if (role() === 'TECHNICIAN' && request.status === 'ASSIGNED') {
+            <button (click)="transit(request, 'start')">Démarrer</button>
+          }
+          @if (role() === 'TECHNICIAN' && request.status === 'IN_PROGRESS') {
+            <button (click)="openResolution(request)">Résoudre</button>
+          }
+          @if ((role() === 'REQUESTER' || role() === 'MANAGER') && request.status === 'RESOLVED') {
+            <button (click)="transit(request, 'close')">Clôturer</button>
+          }
+        </div>
+        @if (request.report) {
+          <section class="detail-section"><h3>Compte rendu</h3><p>{{ request.report }}</p></section>
+        }
+        <section class="detail-section">
+          <h3>Historique</h3>
+          <ol>
+            @for (entry of history(); track entry.version) {
+              <li>{{ historyLabel[entry.action] ?? entry.action }} · {{ statusLabel[entry.status] }} · v{{ entry.version }}</li>
+            } @empty { <li>Aucune action enregistrée.</li> }
+          </ol>
+        </section>
+        <section class="detail-section">
+          <h3>Commentaires</h3>
+          @for (note of comments(); track note.id) { <p class="note">{{ note.body }}</p> }
+          @empty { <p>Aucun commentaire.</p> }
+          @if (request.status !== 'CLOSED' && role() !== 'SUPER_ADMIN') {
+            <div class="comment-form">
+              <label>Message<textarea [formControl]="comment" maxlength="2000"></textarea></label>
+              <button class="primary" (click)="sendComment(request)" [disabled]="busy()">Ajouter</button>
+            </div>
+          }
+        </section>
+      </div>
+    </aside>
+  }
+
+  @if (assignment(); as request) {
+    <div class="modal-overlay">
+      <dialog open class="panel modal" aria-labelledby="assignment-title" aria-modal="true"
+        cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (keydown.escape)="closeRequestDialog()">
+        <header class="panel-heading">
+          <div><h2 id="assignment-title">Affecter la demande</h2><p>{{ request.title }}</p></div>
+          <button type="button" class="close-icon" aria-label="Fermer l’affectation" title="Fermer"
+            [disabled]="busy()" (click)="closeRequestDialog()"></button>
+        </header>
+        <label>Technicien<select #chosen aria-label="Technicien" cdkFocusInitial><option value="">Choisir</option>
+          @for (technician of technicians(); track technician.id) { <option [value]="technician.id">{{ technician.name }}</option> }
+        </select></label>
+        @if (error()) { <p class="dialog-error" role="alert">{{ error() }}</p> }
+        <div class="actions">
+          <button type="button" (click)="closeRequestDialog()" [disabled]="busy()">Annuler</button>
+          <button class="primary" (click)="confirmAssignment(request, chosen.value)" [disabled]="busy()">Confirmer</button>
+        </div>
+      </dialog>
+    </div>
+  }
+
+  @if (resolution(); as request) {
+    <div class="modal-overlay">
+      <dialog open class="panel modal" aria-labelledby="resolution-title" aria-modal="true"
+        cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (keydown.escape)="closeRequestDialog()">
+        <header class="panel-heading">
+          <h2 id="resolution-title">Résoudre la demande</h2>
+          <button type="button" class="close-icon" aria-label="Fermer la résolution" title="Fermer"
+            [disabled]="busy()" (click)="closeRequestDialog()"></button>
+        </header>
+        <label>Compte rendu<textarea [formControl]="report" maxlength="2000" cdkFocusInitial></textarea></label>
+        @if (error()) { <p class="dialog-error" role="alert">{{ error() }}</p> }
+        <div class="actions">
+          <button type="button" (click)="closeRequestDialog()" [disabled]="busy()">Annuler</button>
+          <button class="primary" (click)="confirmResolution(request)" [disabled]="busy()">Enregistrer</button>
+        </div>
+      </dialog>
+    </div>
+  }
+
+  @if (notificationsOpen()) {
+    <aside class="panel detail notifications" aria-labelledby="notifications-title" (keydown.escape)="notificationsOpen.set(false)">
+      <header class="panel-heading">
+        <h2 id="notifications-title">Notifications</h2>
+        <button type="button" class="close-icon" aria-label="Fermer les notifications" title="Fermer"
+          (click)="notificationsOpen.set(false)"></button>
+      </header>
+      <div class="detail-body notification-list">
+        @for (notification of notifications(); track notification.id) {
+          <button class="notification-entry" (click)="notificationsOpen.set(false); detail(notification.requestId)">
+            <strong>Nouvelle affectation</strong>
+            <time [attr.datetime]="notification.createdAt">{{ notification.createdAt | date:'dd/MM/yyyy à HH:mm' }}</time>
+          </button>
+        } @empty { <p>Aucune notification.</p> }
+      </div>
+    </aside>
+  }
+
+  @if (error() && !assignment() && !resolution()) {
+    <div class="error" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="close-icon" aria-label="Fermer le message" title="Fermer" (click)="error.set('')"></button>
+    </div>
+  }
+</main>

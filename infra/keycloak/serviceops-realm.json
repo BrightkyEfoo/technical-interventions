@@ -1,0 +1,327 @@
+{
+  "realm": "serviceops",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "loginTheme": "serviceops",
+  "roles": {
+    "realm": [
+      {
+        "name": "MANAGER"
+      },
+      {
+        "name": "TECHNICIAN"
+      },
+      {
+        "name": "REQUESTER"
+      },
+      {
+        "name": "SUPER_ADMIN"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000100",
+        "name": "default-roles-serviceops",
+        "composite": true,
+        "clientRole": false,
+        "composites": {
+          "realm": [
+            "REQUESTER"
+          ]
+        }
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "serviceops-web",
+      "redirectUris": [
+        "http://localhost:${SERVICEOPS_WEB_PORT}/*",
+        "http://127.0.0.1:${SERVICEOPS_WEB_PORT}/*"
+      ],
+      "webOrigins": [
+        "http://localhost:${SERVICEOPS_WEB_PORT}",
+        "http://127.0.0.1:${SERVICEOPS_WEB_PORT}"
+      ],
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "ServiceOps API audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "serviceops-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "standardFlowEnabled": true,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "serviceops-mobile",
+      "redirectUris": [
+        "http://localhost:${SERVICEOPS_MOBILE_WEB_PORT}/*",
+        "http://127.0.0.1:${SERVICEOPS_MOBILE_WEB_PORT}/*",
+        "cm.brightky.serviceops://oidc"
+      ],
+      "webOrigins": [
+        "http://localhost:${SERVICEOPS_MOBILE_WEB_PORT}",
+        "http://127.0.0.1:${SERVICEOPS_MOBILE_WEB_PORT}",
+        "capacitor://localhost",
+        "https://localhost",
+        "http://localhost"
+      ],
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "ServiceOps API audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "serviceops-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "standardFlowEnabled": true,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "serviceops-test",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "enabled": "${SERVICEOPS_TEST_GRANTS}",
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "ServiceOps API audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "serviceops-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "serviceops-accounts",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${SERVICEOPS_ACCOUNTS_CLIENT_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "fullScopeAllowed": true
+    }
+  ],
+  "users": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "username": "manager",
+      "enabled": true,
+      "firstName": "ServiceOps",
+      "lastName": "manager",
+      "email": "manager@serviceops.com",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "serviceops-demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "MANAGER"
+      ]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "username": "technician",
+      "enabled": true,
+      "firstName": "ServiceOps",
+      "lastName": "technician",
+      "email": "technician@serviceops.com",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "serviceops-demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "TECHNICIAN"
+      ]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "username": "requester",
+      "enabled": true,
+      "firstName": "ServiceOps",
+      "lastName": "requester",
+      "email": "requester@serviceops.com",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "serviceops-demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "REQUESTER"
+      ]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "username": "technician2",
+      "enabled": true,
+      "firstName": "ServiceOps",
+      "lastName": "technician2",
+      "email": "technician2@serviceops.com",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "serviceops-demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "TECHNICIAN"
+      ]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "username": "superadmin",
+      "enabled": true,
+      "firstName": "Super",
+      "lastName": "Admin",
+      "email": "superadmin@serviceops.com",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_SUPER_ADMIN_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SUPER_ADMIN"
+      ]
+    },
+    {
+      "username": "service-account-serviceops-accounts",
+      "enabled": true,
+      "serviceAccountClientId": "serviceops-accounts",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-realm"
+        ]
+      }
+    }
+  ],
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "passwordPolicy": "length(12)",
+  "defaultRole": {
+    "id": "00000000-0000-4000-8000-000000000100",
+    "name": "default-roles-serviceops",
+    "composite": true,
+    "clientRole": false
+  },
+  "browserFlow": "serviceops-browser-mfa",
+  "directGrantFlow": "serviceops-test-password",
+  "authenticationFlows": [
+    {
+      "alias": "serviceops-browser-mfa",
+      "description": "serviceops-browser-mfa",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10
+        },
+        {
+          "flowAlias": "serviceops-mfa-forms",
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 20
+        }
+      ]
+    },
+    {
+      "alias": "serviceops-mfa-forms",
+      "description": "serviceops-mfa-forms",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20
+        }
+      ]
+    },
+    {
+      "alias": "serviceops-test-password",
+      "description": "serviceops-test-password",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "direct-grant-validate-username",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10
+        },
+        {
+          "authenticator": "direct-grant-validate-password",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20
+        }
+      ]
+    }
+  ],
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": true,
+      "priority": 20,
+      "config": {}
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "projects": {
+    "web": {
+      "projectType": "application",
+      "root": "apps/web-angular",
+      "sourceRoot": "apps/web-angular/src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/web-angular/src/main.ts",
+            "index": "apps/web-angular/src/index.html",
+            "outputPath": "dist/web",
+            "tsConfig": "tsconfig.json",
+            "polyfills": [
+              "zone.js"
+            ],
+            "styles": [
+              "apps/web-angular/src/styles.css"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "optimization": true
+            },
+            "development": {
+              "optimization": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "development": {
+              "buildTarget": "web:build:development"
+            }
+          },
+          "defaultConfiguration": "development",
+          "options": {
+            "proxyConfig": "infra/angular-proxy.json"
+          }
+        }
+      }
+    },
+    "mobile": {
+      "projectType": "application",
+      "root": "apps/mobile-ionic",
+      "sourceRoot": "apps/mobile-ionic/src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "apps/mobile-ionic/src/main.ts",
+            "index": "apps/mobile-ionic/src/index.html",
+            "outputPath": "dist/mobile",
+            "tsConfig": "tsconfig.json",
+            "polyfills": [
+              "zone.js"
+            ],
+            "styles": [
+              "apps/mobile-ionic/src/styles.css"
+            ],
+            "assets": [
+              {
+                "glob": "sw.js",
+                "input": "apps/mobile-ionic/public",
+                "output": "/"
+              }
+            ]
+          },
+          "configurations": {
+            "production": {
+              "optimization": true
+            },
+            "development": {
+              "optimization": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "development": {
+              "buildTarget": "mobile:build:development"
+            }
+          },
+          "defaultConfiguration": "development",
+          "options": {
+            "proxyConfig": "infra/angular-proxy.json"
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": false
+  }
+}

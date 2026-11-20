@@ -1,0 +1,879 @@
+openapi: 3.1.0
+info:
+  title: ServiceOps Lab
+  version: "1.0"
+servers:
+- url: http://127.0.0.1:8080
+  description: Java
+- url: http://127.0.0.1:8081
+  description: Kotlin
+security:
+- oidcBearer: []
+paths:
+  /api/v1/requests:
+    get:
+      tags:
+      - request-controller
+      operationId: list
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ""
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - ASSIGNED
+          - IN_PROGRESS
+          - RESOLVED
+          - CLOSED
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RequestPage"
+    post:
+      tags:
+      - request-controller
+      operationId: createRequest
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRequestBody"
+        required: true
+      responses:
+        "201":
+          description: Demande créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestResponse"
+        "400":
+          description: JSON mal formé ou titre invalide. Le format ci-dessous décrit
+            le refus lié à la longueur du titre.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/RequestProblemResponse"
+              examples:
+                invalidTitle:
+                  description: invalidTitle
+                  value:
+                    type: about:blank
+                    title: Invalid request title
+                    status: 400
+                    detail: The title must have at least 5 characters
+                    instance: /api/v1/requests
+                    code: INVALID_TITLE
+  /api/v1/requests/{id}/start:
+    post:
+      tags:
+      - request-controller
+      operationId: start
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersionBody"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RequestResponse"
+  /api/v1/requests/{id}/resolve:
+    post:
+      tags:
+      - request-controller
+      operationId: resolve
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveBody"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RequestResponse"
+  /api/v1/requests/{id}/comments:
+    get:
+      tags:
+      - request-controller
+      operationId: comments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: {}
+    post:
+      tags:
+      - request-controller
+      operationId: comment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
+  /api/v1/requests/{id}/close:
+    post:
+      tags:
+      - request-controller
+      operationId: close
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersionBody"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RequestResponse"
+  /api/v1/requests/{id}/attachments:
+    post:
+      tags:
+      - request-controller
+      operationId: attach
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: expectedVersion
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                  format: uuid
+  /api/v1/requests/{id}/assign:
+    post:
+      tags:
+      - request-controller
+      operationId: assignRequest
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignRequestBody"
+        required: true
+      responses:
+        "204":
+          description: Demande affectée
+        "400":
+          description: Identifiant ou corps invalide. Le format ci-dessous correspond
+            au code INVALID_ASSIGNEE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/RequestProblemResponse"
+        "403":
+          description: Seul un responsable peut affecter la demande (ASSIGNMENT_FORBIDDEN)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/RequestProblemResponse"
+        "404":
+          description: Demande ou utilisateur introuvable (REQUEST_NOT_FOUND ou USER_NOT_FOUND)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/RequestProblemResponse"
+        "409":
+          description: Le statut de la demande ne permet plus l’affectation (REQUEST_ASSIGNMENT_CONFLICT)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/RequestProblemResponse"
+  /api/v1/admin/accounts:
+    get:
+      tags:
+      - accounts-controller
+      summary: Lister les comptes utilisateurs
+      description: Annuaire Keycloak réservé au super admin.
+      operationId: listAccounts
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ""
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          description: Page de comptes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountPage"
+        "400":
+          description: Recherche ou pagination invalide
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Session nécessaire
+        "403":
+          description: Rôle SUPER_ADMIN requis
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: Annuaire indisponible
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    post:
+      tags:
+      - accounts-controller
+      summary: Créer un compte responsable ou technicien
+      description: Réservé au super admin. Le mot de passe est temporaire.
+      operationId: createStaff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffRequest"
+        required: true
+      responses:
+        "201":
+          description: Compte créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffAccount"
+        "400":
+          description: Données ou rôle invalides (INVALID_INPUT ou INVALID_ACCOUNT)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Session nécessaire
+        "403":
+          description: Rôle SUPER_ADMIN requis (REQUEST_FORBIDDEN)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Identifiant ou courriel déjà utilisé (ACCOUNT_CONFLICT)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: Annuaire indisponible (ACCOUNT_DIRECTORY_UNAVAILABLE)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/v1/technicians:
+    get:
+      tags:
+      - accounts-controller
+      summary: Lister les techniciens actifs pour une affectation
+      description: Réservé au responsable.
+      operationId: technicians
+      parameters:
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TechnicianSummary"
+  /api/v1/requests/{id}:
+    get:
+      tags:
+      - request-controller
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RequestResponse"
+  /api/v1/requests/{id}/history:
+    get:
+      tags:
+      - request-controller
+      operationId: history
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoryEntry"
+  /api/v1/requests/{id}/attachments/{fileId}:
+    get:
+      tags:
+      - request-controller
+      operationId: attachment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+  /api/v1/notifications:
+    get:
+      tags:
+      - notifications-controller
+      operationId: list_1
+      parameters:
+      - name: X-Demo-Actor
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+components:
+  schemas:
+    CreateRequestBody:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        priority:
+          type: string
+          enum:
+          - LOW
+          - NORMAL
+          - HIGH
+      required:
+      - title
+    RequestResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+          enum:
+          - OPEN
+          - ASSIGNED
+          - IN_PROGRESS
+          - RESOLVED
+          - CLOSED
+        assigneeId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        priority:
+          type: string
+          enum:
+          - LOW
+          - NORMAL
+          - HIGH
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        report:
+          type: string
+    RequestProblemResponse:
+      type: object
+      description: Réponse produite par le gestionnaire des erreurs métier
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        code:
+          type: string
+          description: Code métier stable
+      required:
+      - code
+      - detail
+      - status
+    VersionBody:
+      type: object
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - expectedVersion
+    ResolveBody:
+      type: object
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        report:
+          type: string
+          minLength: 1
+      required:
+      - expectedVersion
+      - report
+    CommentBody:
+      type: object
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        body:
+          type: string
+          minLength: 1
+      required:
+      - body
+      - expectedVersion
+    AssignRequestBody:
+      type: object
+      properties:
+        actorId:
+          type: string
+          format: uuid
+          description: "Identifiant du responsable utilisé pour la démonstration,\
+            \ en attendant OIDC"
+        technicianId:
+          type: string
+          format: uuid
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - technicianId
+    StaffRequest:
+      type: object
+      properties:
+        role:
+          type: string
+          enum:
+          - MANAGER
+          - TECHNICIAN
+        username:
+          type: string
+          minLength: 1
+          pattern: "[a-zA-Z0-9._-]{3,64}"
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          minLength: 0
+        firstName:
+          type: string
+          maxLength: 120
+          minLength: 0
+        lastName:
+          type: string
+          maxLength: 120
+          minLength: 0
+        temporaryPassword:
+          type: string
+          maxLength: 128
+          minLength: 12
+          writeOnly: true
+      required:
+      - email
+      - firstName
+      - lastName
+      - role
+      - temporaryPassword
+      - username
+    StaffAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+          - MANAGER
+          - TECHNICIAN
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        properties:
+          type: object
+          additionalProperties: {}
+    TechnicianSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    RequestPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RequestResponse"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+    HistoryEntry:
+      type: object
+      properties:
+        version:
+          type: integer
+          format: int64
+        actorId:
+          type: string
+          format: uuid
+        action:
+          type: string
+        status:
+          type: string
+          enum:
+          - OPEN
+          - ASSIGNED
+          - IN_PROGRESS
+          - RESOLVED
+          - CLOSED
+        occurredAt:
+          type: string
+          format: date-time
+    AccountPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountSummary"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        hasNext:
+          type: boolean
+    AccountSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum:
+          - SUPER_ADMIN
+          - MANAGER
+          - TECHNICIAN
+          - REQUESTER
+        enabled:
+          type: boolean
+  securitySchemes:
+    oidcBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

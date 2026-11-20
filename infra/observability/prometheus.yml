@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: serviceops
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [operations-java:9091, operations-kotlin:9091, notifications-java:9091, notifications-kotlin:9091]
