@@ -13,6 +13,7 @@ public class AssignRequest {
         this.requestRepository = requestRepository;
         this.userRepository = userRepository;
     }
+
     public void execute(AssignRequestCommand command) {
         var request = requestRepository.findById(command.requestId())
                 .orElseThrow(() -> new ServiceOpsException(
